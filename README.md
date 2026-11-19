@@ -10,7 +10,7 @@
 ![Java](https://img.shields.io/badge/Java-17%2B-007396?style=flat-square)
 ![UI](https://img.shields.io/badge/UI-Java%20Swing-6C5CE7?style=flat-square)
 ![renderer](https://img.shields.io/badge/renderer-FFmpeg-000000?style=flat-square)
-![license](https://img.shields.io/badge/license-personal-lightgrey?style=flat-square)
+![platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-2E86AB?style=flat-square)
 
 </div>
 
@@ -24,6 +24,35 @@ The whole editor lives in one modest window: a scrollable row of tilting cards y
 
 > **Status:** alpha. It works, it renders, and it is still being shaped.
 
+## Downloads
+
+Grab the latest build from the [releases page](https://github.com/rintoji/Cardelle/releases/latest), or jump straight to the current alpha (`v0.1-alpha`):
+
+| Platform | File | What you need |
+| --- | --- | --- |
+| Linux | [Cardelle-x86_64.AppImage](https://github.com/rintoji/Cardelle/releases/download/v0.1-alpha/Cardelle-x86_64.AppImage) | Nothing — a Java runtime is bundled. On older distros you may need `fuse2` for AppImages. |
+| Windows | [Cardelle.exe](https://github.com/rintoji/Cardelle/releases/download/v0.1-alpha/Cardelle.exe) | Nothing — a Windows JRE is bundled and unpacks on first launch. |
+| Anywhere | [Cardelle.jar](https://github.com/rintoji/Cardelle/releases/download/v0.1-alpha/Cardelle.jar) | Java 17+ installed. The logo is baked into the jar, so the watermark works here too. |
+
+**Linux**
+
+```bash
+chmod +x Cardelle-x86_64.AppImage
+./Cardelle-x86_64.AppImage
+```
+
+**Windows**
+
+Double-click `Cardelle.exe`. The first run unpacks its runtime into a temporary folder, then starts the editor. Windows may show a SmartScreen warning because the alpha build is not code-signed.
+
+**JAR**
+
+```bash
+java -jar Cardelle.jar
+```
+
+> All three variants still need **FFmpeg and FFprobe** on your `PATH` to render videos. See [Requirements](#requirements).
+
 ## Features
 
 - **Drop it in** — drag image files and one MP3 onto the window, or paste from the clipboard with `Ctrl+V`.
@@ -31,11 +60,11 @@ The whole editor lives in one modest window: a scrollable row of tilting cards y
 - **A deck you can touch** — left-drag to reorder with animated reflow and a subtle tilt; right-click to remove a card. Hovering gives each card a moving shine.
 - **25 transitions** — slides, wipes, pushes, reveals, blurs, pixelize, shutters, and more. FFmpeg `xfade` transitions are picked randomly without repeating the last one.
 - **Music-synced output** — the MP3 duration is measured first, then slide lengths are calculated so the video lands with the track. Renders at **1280×720, 60 fps**.
-- **Optional logo watermark** — `Ctrl+L` toggles the Cardelle logo in the center of the final video.
+- **Optional logo watermark** — `Ctrl+L` toggles the Cardelle logo, embedded in every build, in the center of the final video.
 - **Full blur mode** — `Ctrl+B` renders with a soft blur over the whole track, for use as a background layer.
 - **No guesswork** — live progress bar, a small self-hiding help overlay (`Ctrl+H`), and the finished video opens automatically when rendering completes.
 
-## Getting started
+## Build from source
 
 ### Requirements
 
@@ -45,19 +74,31 @@ The whole editor lives in one modest window: a scrollable row of tilting cards y
   - Arch: `sudo pacman -S ffmpeg`
   - macOS: `brew install ffmpeg`
 
-### Run it
-
 Easiest path: open the folder in IntelliJ IDEA and run `Visuals.main()`.
 
 Or from a terminal:
 
 ```bash
 javac -d out src/*.java
-cp src/*.png src/*.jpg out/   # put the logo and sample art on the classpath
+cp src/Cardelle_logo.png out/   # keep the logo on the classpath for the watermark
 java -cp out Visuals
 ```
 
-### Make a video
+To rebuild the portable jar yourself:
+
+```bash
+javac --release 21 -d build/classes src/*.java
+cp src/Cardelle_logo.png build/classes/
+jar --create --file Cardelle.jar \
+    --manifest src/META-INF/MANIFEST.MF \
+    -C build/classes .
+```
+
+The logo is copied to the **root of the jar** so `getResourceAsStream("/Cardelle_logo.png")` always finds it — no external `src/` folder needed at runtime.
+
+The release builds are produced with a bundled runtime: `jlink` for the AppImage's Linux JRE, and a Temurin Windows JRE inside a 7-Zip self-extracting executable for the `.exe`.
+
+## Make a video
 
 1. Launch the app.
 2. Drop images onto the window, or press `Ctrl+V` to paste files.
@@ -100,16 +141,15 @@ Temporary files are cleaned up when the render finishes.
 ```
 .
 ├── src/
-│   ├── Visuals.java          # UI, window, shortcuts, render triggers
-│   ├── Cards.java            # tilting, shine-y card component
-│   ├── MediaManager.java     # slide list, color generation, MP3 state
-│   ├── DropSystem.java       # drag & drop file handling
-│   ├── TransitionManager.java# transition catalog + logo handling
-│   ├── VideoRenderer.java    # FFmpeg pipeline and progress reporting
-│   ├── Cardelle_logo.png     # the mark you see above
-│   ├── inverted.png          # sample art
-│   ├── mahoraga.jpg          # sample art
-│   └── void.jpg              # sample art
+│   ├── Visuals.java           # UI, window, shortcuts, render triggers
+│   ├── Cards.java             # tilting, shine-y card component
+│   ├── MediaManager.java      # slide list, color generation, MP3 state
+│   ├── DropSystem.java        # drag & drop file handling
+│   ├── TransitionManager.java # transition catalog + logo handling
+│   ├── VideoRenderer.java     # FFmpeg pipeline and progress reporting
+│   ├── Main.java              # small console entry point
+│   └── Cardelle_logo.png      # the mark you see above (also embedded in builds)
+├── releases/                  # locally built artifacts (not tracked in git)
 └── README.md
 ```
 
@@ -119,7 +159,8 @@ Temporary files are cleaned up when the render finishes.
 - [ ] Configurable resolution, fps, and per-slide duration
 - [ ] Text / caption overlays
 - [ ] Export presets for vertical and square formats
-- [ ] A packaged JAR / installer
+- [ ] Bundle FFmpeg so downloads are fully standalone
+- [ ] Code signing for the Windows build
 
 ---
 
