@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="src/Cardelle_logo.png" alt="Cardelle" width="280">
+![Cardelle](src/Cardelle_logo.png)
 
 # Cardelle
 
