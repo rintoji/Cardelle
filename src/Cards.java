@@ -1,24 +1,55 @@
-
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
-import java.awt.image.*;
-import java.io.*;
-import javax.imageio.ImageIO;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 
 public class Cards extends JPanel {
 
-    int w = 200, h = 270, tilt = 20;
+    @FunctionalInterface
+    public interface CardActionListener {
+        void onDelete(Cards card);
+    }
 
-    double mx = 125, my = 160;
+    public interface CardDragListener {
+        void onDragStart(Cards card, MouseEvent e);
+        void onDragMove(Cards card, MouseEvent e);
+        void onDragEnd(Cards card, MouseEvent e);
+    }
 
-    BufferedImage img;
+    private static final int PADDING = 38;
+
+    private final int w = 200;
+    private final int h = 270;
+    private final int tilt = 20;
+
+    private final double centerX = PADDING + w / 2.0;
+    private final double centerY = PADDING + h / 2.0;
+
+    private double mx = centerX;
+    private double my = centerY;
+
+    private BufferedImage img;
+    private Color solidColor;
+    private BufferedImage cachedWarped;
+    private double lastWarpedMx = Double.NaN;
+    private double lastWarpedMy = Double.NaN;
+
+    private boolean isDragging = false;
+    private double dragTiltAngleRad = 0.0;
+
+    private CardActionListener actionListener;
+    private CardDragListener dragListener;
 
     // ==========================================
     // SHINE SETTINGS
     // ==========================================
 
-    private boolean shine;
+    private final boolean shine;
     private boolean isHovering = false;
 
     private int shineY = -100;
@@ -34,44 +65,69 @@ public class Cards extends JPanel {
     // CONSTRUCTORS
     // ==========================================
 
-    // Empty card
     public Cards() {
-        this(null, false);
+        this((String) null, false);
     }
 
-    // Image card
     public Cards(String path) {
         this(path, false);
     }
 
-    // Empty card with shine
-    public Cards(boolean shine) {
-        this(null, shine);
-    }
-
-    // Image card with shine option
     public Cards(String path, boolean shine) {
-
         this.shine = shine;
 
         if (path != null) {
             try {
-                img = ImageIO.read(new File(path));
-
+                File file = new File(path);
+                img = ImageIO.read(file);
                 if (img == null) {
-                    System.out.println("Invalid image format!");
+                    System.err.println("Unsupported or invalid image format: " + path);
                 }
-
             } catch (IOException e) {
-                e.printStackTrace();
+                System.err.println("Failed to load image '" + path + "': " + e.getMessage());
             }
         }
 
-        setPreferredSize(new Dimension(w + 50, h + 50));
+        initCard();
+    }
+
+    public Cards(Color solidColor, boolean shine) {
+        this.shine = shine;
+        this.solidColor = solidColor;
+        initCard();
+    }
+
+    private void initCard() {
+        Dimension size = new Dimension(w + PADDING * 2, h + PADDING * 2);
+        setPreferredSize(size);
+        setMaximumSize(size);
         setOpaque(false);
 
         initializeMouse();
         initializeShine();
+    }
+
+    public void setCardActionListener(CardActionListener listener) {
+        this.actionListener = listener;
+    }
+
+    public void setCardDragListener(CardDragListener listener) {
+        this.dragListener = listener;
+    }
+
+    public void setDraggingState(boolean dragging, double dxOffset) {
+        this.isDragging = dragging;
+        double clamped = Math.max(-1.0, Math.min(1.0, dxOffset / 140.0));
+        this.dragTiltAngleRad = Math.toRadians(clamped * 6.0);
+        repaint();
+    }
+
+    public BufferedImage getImage() {
+        return img;
+    }
+
+    public Color getSolidColor() {
+        return solidColor;
     }
 
     // ==========================================
@@ -79,50 +135,90 @@ public class Cards extends JPanel {
     // ==========================================
 
     private void initializeMouse() {
-
         addMouseMotionListener(new MouseMotionAdapter() {
-
             @Override
             public void mouseMoved(MouseEvent e) {
                 mx = e.getX();
                 my = e.getY();
-
                 repaint();
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e)) {
+                    mx = e.getX();
+                    my = e.getY();
+                    double nx = Math.max(-1.0, Math.min(1.0, (mx - centerX) / (w / 2.0)));
+                    dragTiltAngleRad = Math.toRadians(nx * 6.0);
+                    if (dragListener != null) {
+                        dragListener.onDragMove(Cards.this, e);
+                    }
+                    repaint();
+                }
             }
         });
 
         addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    if (actionListener != null) {
+                        actionListener.onDelete(Cards.this);
+                    }
+                    return;
+                }
+                if (SwingUtilities.isLeftMouseButton(e)) {
+                    isDragging = true;
+                    if (shineTimer != null) {
+                        shineTimer.stop();
+                    }
+                    if (shineDelay != null) {
+                        shineDelay.stop();
+                    }
+                    if (dragListener != null) {
+                        dragListener.onDragStart(Cards.this, e);
+                    }
+                    repaint();
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e) && isDragging) {
+                    isDragging = false;
+                    dragTiltAngleRad = 0.0;
+                    if (dragListener != null) {
+                        dragListener.onDragEnd(Cards.this, e);
+                    }
+                    repaint();
+                }
+            }
 
             @Override
             public void mouseEntered(MouseEvent e) {
-
                 isHovering = true;
-
-                if (shine && shineTimer != null) {
+                if (shine && !isDragging && shineTimer != null && !shineTimer.isRunning()) {
                     shineTimer.start();
                 }
-
                 repaint();
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-
                 isHovering = false;
-
-                mx = 125;
-                my = 160;
+                if (!isDragging) {
+                    mx = centerX;
+                    my = centerY;
+                }
 
                 if (shineTimer != null) {
                     shineTimer.stop();
                 }
-
                 if (shineDelay != null) {
                     shineDelay.stop();
                 }
 
                 shineY = -100;
-
                 repaint();
             }
         });
@@ -133,27 +229,20 @@ public class Cards extends JPanel {
     // ==========================================
 
     private void initializeShine() {
+        shineDelay = new Timer(shineDelayTime, event -> {
+            if (isHovering && !isDragging && shineTimer != null) {
+                shineTimer.start();
+            }
+        });
+        shineDelay.setRepeats(false);
 
         shineTimer = new Timer(16, e -> {
-
             shineY += shineSpeed;
 
             if (shineY > h + 100) {
-
                 shineTimer.stop();
-
                 shineY = -100;
-
-                shineDelay = new Timer(shineDelayTime, event -> {
-
-                    if (isHovering) {
-                        shineTimer.start();
-                    }
-
-                });
-
-                shineDelay.setRepeats(false);
-                shineDelay.start();
+                shineDelay.restart();
             }
 
             repaint();
@@ -165,32 +254,11 @@ public class Cards extends JPanel {
     // ==========================================
 
     private void drawShine(Graphics2D g2, Polygon card) {
-
-        Graphics2D shineGraphics =
-                (Graphics2D) g2.create();
-
-        // Clip shine to card
+        Graphics2D shineGraphics = (Graphics2D) g2.create();
         shineGraphics.clip(card);
-
-        // Rotate shine
-        shineGraphics.rotate(
-                Math.toRadians(-25),
-                w / 2.0,
-                h / 2.0
-        );
-
-        // Sharp white rectangle with opacity
-        shineGraphics.setColor(
-                new Color(255, 255, 255, 65)
-        );
-
-        shineGraphics.fillRect(
-                -w,
-                shineY,
-                w * 3,
-                shineHeight
-        );
-
+        shineGraphics.rotate(Math.toRadians(-25), w / 2.0, h / 2.0);
+        shineGraphics.setColor(new Color(255, 255, 255, 65));
+        shineGraphics.fillRect(-w, shineY, w * 3, shineHeight);
         shineGraphics.dispose();
     }
 
@@ -200,74 +268,47 @@ public class Cards extends JPanel {
 
     @Override
     protected void paintComponent(Graphics g) {
-
         super.paintComponent(g);
 
         Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
-        g2.translate(25, 25);
+        if (isDragging) {
+            g2.rotate(dragTiltAngleRad, getWidth() / 2.0, getHeight() / 2.0);
+        }
 
-        g2.setRenderingHint(
-                RenderingHints.KEY_ANTIALIASING,
-                RenderingHints.VALUE_ANTIALIAS_ON
-        );
+        g2.translate(PADDING, PADDING);
 
-        // Normalize mouse coordinates
-        double nx = Math.max(
-                -1,
-                Math.min(1, (mx - 125) / 100)
-        );
+        double nx = Math.max(-1.0, Math.min(1.0, (mx - centerX) / (w / 2.0)));
+        double ny = Math.max(-1.0, Math.min(1.0, (my - centerY) / (h / 2.0)));
 
-        double ny = Math.max(
-                -1,
-                Math.min(1, (my - 160) / 135)
-        );
-
-        // Calculate displacement
         int dx = (int) (nx * tilt);
         int dy = (int) (ny * tilt);
 
-        // Polygon corners
-        int[] x = {
-                dx,
-                w - dx,
-                w + dx,
-                -dx
-        };
-
-        int[] y = {
-                dy,
-                -dy,
-                h + dy,
-                h - dy
-        };
+        int[] x = {dx, w - dx, w + dx, -dx};
+        int[] y = {dy, -dy, h + dy, h - dy};
 
         Polygon p = new Polygon(x, y, 4);
 
-        // Draw image or empty card
         if (img != null) {
-
-            g2.drawImage(
-                    warp(img, x, y),
-                    -25,
-                    -25,
-                    null
-            );
-
+            if (cachedWarped == null || Double.compare(mx, lastWarpedMx) != 0 || Double.compare(my, lastWarpedMy) != 0) {
+                cachedWarped = warp(img, x, y);
+                lastWarpedMx = mx;
+                lastWarpedMy = my;
+            }
+            g2.drawImage(cachedWarped, -PADDING, -PADDING, null);
         } else {
-
-            g2.setColor(new Color(50, 100, 180));
+            g2.setColor(solidColor != null ? solidColor : new Color(50, 100, 180));
             g2.fillPolygon(p);
         }
 
-        // Draw shine only when hovering
-        if (shine && isHovering) {
+        if (shine && isHovering && !isDragging) {
             drawShine(g2, p);
         }
 
-        // Draw border
-        g2.setColor(Color.WHITE);
-        g2.setStroke(new BasicStroke(2));
+        g2.setColor(isDragging ? new Color(255, 235, 140) : Color.WHITE);
+        g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g2.drawPolygon(p);
 
         g2.dispose();
@@ -277,22 +318,14 @@ public class Cards extends JPanel {
     // IMAGE PERSPECTIVE WARPING
     // ==========================================
 
-    static BufferedImage warp(
-            BufferedImage img,
-            int[] x,
-            int[] y
-    ) {
+    private BufferedImage warp(BufferedImage source, int[] x, int[] y) {
+        int outW = w + PADDING * 2;
+        int outH = h + PADDING * 2;
 
-        int W = 250, H = 320;
+        BufferedImage out = new BufferedImage(outW, outH, BufferedImage.TYPE_INT_ARGB);
 
-        BufferedImage out = new BufferedImage(
-                W,
-                H,
-                BufferedImage.TYPE_INT_ARGB
-        );
-
-        double iw = img.getWidth() - 1.0;
-        double ih = img.getHeight() - 1.0;
+        double iw = source.getWidth() - 1.0;
+        double ih = source.getHeight() - 1.0;
 
         double[][] s = {
                 {0, 0},
@@ -302,68 +335,47 @@ public class Cards extends JPanel {
         };
 
         double[][] d = {
-                {x[0] + 25, y[0] + 25},
-                {x[1] + 25, y[1] + 25},
-                {x[2] + 25, y[2] + 25},
-                {x[3] + 25, y[3] + 25}
+                {x[0] + PADDING, y[0] + PADDING},
+                {x[1] + PADDING, y[1] + PADDING},
+                {x[2] + PADDING, y[2] + PADDING},
+                {x[3] + PADDING, y[3] + PADDING}
         };
 
         double[][] a = homography(s, d);
         double[][] inv = a == null ? null : inverse(a);
-
-        if (inv == null) return out;
-
-        int minX = W, maxX = 0;
-        int minY = H, maxY = 0;
-
-        for (int i = 0; i < 4; i++) {
-
-            minX = Math.min(minX, x[i] + 25);
-            maxX = Math.max(maxX, x[i] + 25);
-
-            minY = Math.min(minY, y[i] + 25);
-            maxY = Math.max(maxY, y[i] + 25);
+        if (inv == null) {
+            return out;
         }
 
-        for (
-                int py = Math.max(0, minY);
-                py <= Math.min(H - 1, maxY);
-                py++
-        ) {
+        int minX = outW;
+        int maxX = 0;
+        int minY = outH;
+        int maxY = 0;
 
-            for (
-                    int px = Math.max(0, minX);
-                    px <= Math.min(W - 1, maxX);
-                    px++
-            ) {
+        for (int i = 0; i < 4; i++) {
+            minX = Math.min(minX, x[i] + PADDING);
+            maxX = Math.max(maxX, x[i] + PADDING);
+            minY = Math.min(minY, y[i] + PADDING);
+            maxY = Math.max(maxY, y[i] + PADDING);
+        }
 
-                double z =
-                        inv[2][0] * px +
-                                inv[2][1] * py +
-                                inv[2][2];
+        int startY = Math.max(0, minY);
+        int endY = Math.min(outH - 1, maxY);
+        int startX = Math.max(0, minX);
+        int endX = Math.min(outW - 1, maxX);
 
-                if (Math.abs(z) < 1e-6) continue;
+        for (int py = startY; py <= endY; py++) {
+            for (int px = startX; px <= endX; px++) {
+                double z = inv[2][0] * px + inv[2][1] * py + inv[2][2];
+                if (Math.abs(z) < 1e-6) {
+                    continue;
+                }
 
-                double sx =
-                        (inv[0][0] * px +
-                                inv[0][1] * py +
-                                inv[0][2]) / z;
+                double sx = (inv[0][0] * px + inv[0][1] * py + inv[0][2]) / z;
+                double sy = (inv[1][0] * px + inv[1][1] * py + inv[1][2]) / z;
 
-                double sy =
-                        (inv[1][0] * px +
-                                inv[1][1] * py +
-                                inv[1][2]) / z;
-
-                if (
-                        sx >= 0 && sx <= iw &&
-                                sy >= 0 && sy <= ih
-                ) {
-
-                    out.setRGB(
-                            px,
-                            py,
-                            sample(img, sx, sy)
-                    );
+                if (sx >= 0 && sx <= iw && sy >= 0 && sy <= ih) {
+                    out.setRGB(px, py, sample(source, sx, sy));
                 }
             }
         }
@@ -375,15 +387,12 @@ public class Cards extends JPanel {
     // HOMOGRAPHY
     // ==========================================
 
-    static double[][] homography(double[][] s, double[][] d) {
-
+    private static double[][] homography(double[][] s, double[][] d) {
         double[][] a = new double[8][9];
 
         for (int i = 0; i < 4; i++) {
-
             double x = s[i][0], y = s[i][1];
             double u = d[i][0], v = d[i][1];
-
             int r = i * 2;
 
             a[r][0] = x;
@@ -402,9 +411,7 @@ public class Cards extends JPanel {
         }
 
         for (int i = 0; i < 8; i++) {
-
             int p = i;
-
             for (int j = i + 1; j < 8; j++) {
                 if (Math.abs(a[j][i]) > Math.abs(a[p][i])) {
                     p = j;
@@ -415,20 +422,20 @@ public class Cards extends JPanel {
             a[i] = a[p];
             a[p] = t;
 
-            if (Math.abs(a[i][i]) < 1e-10) return null;
+            if (Math.abs(a[i][i]) < 1e-10) {
+                return null;
+            }
 
             double v = a[i][i];
-
             for (int j = i; j < 9; j++) {
                 a[i][j] /= v;
             }
 
             for (int j = 0; j < 8; j++) {
-
-                if (j == i) continue;
-
+                if (j == i) {
+                    continue;
+                }
                 v = a[j][i];
-
                 for (int k = i; k < 9; k++) {
                     a[j][k] -= v * a[i][k];
                 }
@@ -446,18 +453,18 @@ public class Cards extends JPanel {
     // MATRIX INVERSE
     // ==========================================
 
-    static double[][] inverse(double[][] m) {
-
+    private static double[][] inverse(double[][] m) {
         double a = m[0][0], b = m[0][1], c = m[0][2];
         double d = m[1][0], e = m[1][1], f = m[1][2];
         double g = m[2][0], h = m[2][1], i = m[2][2];
 
-        double det =
-                a * (e * i - f * h)
-                        - b * (d * i - f * g)
-                        + c * (d * h - e * g);
+        double det = a * (e * i - f * h)
+                - b * (d * i - f * g)
+                + c * (d * h - e * g);
 
-        if (Math.abs(det) < 1e-10) return null;
+        if (Math.abs(det) < 1e-10) {
+            return null;
+        }
 
         return new double[][]{
                 {
@@ -482,8 +489,7 @@ public class Cards extends JPanel {
     // BILINEAR IMAGE SAMPLING
     // ==========================================
 
-    static int sample(BufferedImage im, double x, double y) {
-
+    private static int sample(BufferedImage im, double x, double y) {
         int x1 = (int) x;
         int y1 = (int) y;
 
@@ -503,7 +509,6 @@ public class Cards extends JPanel {
         int result = 0;
 
         for (int s = 0; s <= 24; s += 8) {
-
             double a = (c[0] >> s) & 255;
             double b = (c[1] >> s) & 255;
             double d = (c[2] >> s) & 255;
@@ -526,15 +531,12 @@ public class Cards extends JPanel {
 
     @Override
     public void removeNotify() {
-
         if (shineTimer != null) {
             shineTimer.stop();
         }
-
         if (shineDelay != null) {
             shineDelay.stop();
         }
-
         super.removeNotify();
     }
 }

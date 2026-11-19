@@ -1,3 +1,6 @@
+### Rendered video output ###
+*.mp4
+
 ### IntelliJ IDEA ###
 out/
 !**/src/main/**/out/
