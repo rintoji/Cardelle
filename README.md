@@ -13,6 +13,7 @@
 ![UI](https://img.shields.io/badge/UI-Java%20Swing-6C5CE7?style=flat-square)
 ![renderer](https://img.shields.io/badge/renderer-FFmpeg-000000?style=flat-square)
 ![platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-2E86AB?style=flat-square)
+[![license](https://img.shields.io/badge/license-MIT-2EA44F?style=flat-square)](LICENSE)
 
 </div>
 
@@ -171,9 +172,9 @@ Temporary files are cleaned up when the render finishes.
 │   ├── DropSystem.java        # drag & drop file handling
 │   ├── TransitionManager.java # transition catalog + logo handling
 │   ├── VideoRenderer.java     # FFmpeg pipeline and progress reporting
-│   ├── Main.java              # small console entry point
 │   └── Cardelle_logo.png      # the mark you see above (also embedded in builds)
 ├── releases/                  # locally built artifacts (not tracked in git)
+├── LICENSE                    # MIT
 └── README.md
 ```
 
