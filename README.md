@@ -1,6 +1,6 @@
 <div align="center">
 
-![Cardelle](src/Cardelle_logo.png)
+<img src="https://raw.githubusercontent.com/rintoji/Cardelle/main/src/Cardelle_logo.png" alt="Cardelle" width="280">
 
 # Cardelle
 
