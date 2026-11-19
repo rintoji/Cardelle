@@ -4,7 +4,9 @@
 
 # Cardelle
 
-**Drop in images. Drop in a song. Walk away with a cinematic MP4.**
+**Cards in. Music in. A video out.**
+
+*Card + song → Cardelle.*
 
 ![status](https://img.shields.io/badge/status-alpha-ff9f43?style=flat-square)
 ![Java](https://img.shields.io/badge/Java-17%2B-007396?style=flat-square)
@@ -23,6 +25,28 @@ Cardelle is a small desktop tool that turns a stack of images (and a handful of 
 The whole editor lives in one modest window: a scrollable row of tilting cards you can drag around, a status bar, and a keyboard-driven control scheme.
 
 > **Status:** alpha. It works, it renders, and it is still being shaped.
+
+## Why "Cardelle"?
+
+The name is the whole idea, compressed into one word.
+
+**Card** — the deck of stills you build by hand: images, generated color cards, little moments you arrange and reorder.
+
+**elle** — the turn outward. The moment those cards stop sitting still and start moving *with* a song.
+
+Read it left to right: **card → elle**. Cards go in on one side, a track goes in on the other, and something with a name of its own comes out. It isn't a card viewer that happens to have music — it's a machine for turning cards into a music-led film.
+
+```
+   [card] [card] [card]          ♪  track.mp3
+            │                         │
+            └───────────┬─────────────┘
+                        ▼
+                  C A R D E L L E
+                        ▼
+                 [ timed video.mp4 ]
+```
+
+That little transformation is the reason for every feature below: the cards are the input, the music sets the pace, and Cardelle is what happens in between.
 
 ## Downloads
 
