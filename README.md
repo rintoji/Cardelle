@@ -51,13 +51,13 @@ That little transformation is the reason for every feature below: the cards are 
 
 ## Downloads
 
-Grab the latest build from the [releases page](https://github.com/rintoji/Cardelle/releases/latest), or jump straight to the current alpha (`v0.1-alpha`):
+Grab the latest build from the [releases page](https://github.com/rintoji/Cardelle/releases/latest), or jump straight to the current alpha (`v0.1.1-alpha`):
 
 | Platform | File | What you need |
 | --- | --- | --- |
-| Linux | [Cardelle-x86_64.AppImage](https://github.com/rintoji/Cardelle/releases/download/v0.1-alpha/Cardelle-x86_64.AppImage) | Nothing — a Java runtime is bundled. On older distros you may need `fuse2` for AppImages. |
-| Windows | [Cardelle.exe](https://github.com/rintoji/Cardelle/releases/download/v0.1-alpha/Cardelle.exe) | Nothing — a Windows JRE is bundled and unpacks on first launch. |
-| Anywhere | [Cardelle.jar](https://github.com/rintoji/Cardelle/releases/download/v0.1-alpha/Cardelle.jar) | Java 17+ installed. The logo is baked into the jar, so the watermark works here too. |
+| Linux | [Cardelle-x86_64.AppImage](https://github.com/rintoji/Cardelle/releases/download/v0.1.1-alpha/Cardelle-x86_64.AppImage) | Nothing — Java **and FFmpeg** are bundled. On older distros you may need `fuse2` for AppImages. |
+| Windows | [Cardelle.exe](https://github.com/rintoji/Cardelle/releases/download/v0.1.1-alpha/Cardelle.exe) | Nothing — a Windows JRE **and FFmpeg** are bundled and unpack on first launch. |
+| Anywhere | [Cardelle.jar](https://github.com/rintoji/Cardelle/releases/download/v0.1.1-alpha/Cardelle.jar) | Java 17+ **and FFmpeg/FFprobe** on your `PATH`. The logo is baked into the jar. |
 
 **Linux**
 
@@ -70,17 +70,19 @@ chmod +x Cardelle-x86_64.AppImage
 
 Double-click `Cardelle.exe`. The first run unpacks its runtime into a temporary folder, then starts the editor. Windows may show a SmartScreen warning because the alpha build is not code-signed.
 
+> **Windows tip:** launch it normally, not with *Run as administrator*. Windows blocks drag-and-drop and clipboard sharing between an elevated app and File Explorer (you'll see a 🚫 cursor). If that happens, use **Ctrl+O** — the file picker works at any privilege level.
+
 **JAR**
 
 ```bash
 java -jar Cardelle.jar
 ```
 
-> All three variants still need **FFmpeg and FFprobe** on your `PATH` to render videos. See [Requirements](#requirements).
+> The AppImage and `.exe` are fully standalone. Only the plain jar needs FFmpeg installed separately.
 
 ## Features
 
-- **Drop it in** — drag image files and one MP3 onto the window, or paste from the clipboard with `Ctrl+V`.
+- **Drop it in** — drag image files and one MP3 onto the window, paste from the clipboard with `Ctrl+V`, or use the file picker with `Ctrl+O` if Windows blocks dragging.
 - **Color cards** — `Ctrl+N` adds a generated color card. Hues are spread with a golden-angle walk so neighbors never collapse into the same shade of pink.
 - **A deck you can touch** — left-drag to reorder with animated reflow and a subtle tilt; right-click to remove a card. Hovering gives each card a moving shine.
 - **25 transitions** — slides, wipes, pushes, reveals, blurs, pixelize, shutters, and more. FFmpeg `xfade` transitions are picked randomly without repeating the last one.
@@ -91,10 +93,10 @@ java -jar Cardelle.jar
 
 ## Build from source
 
-### Requirements
+### Requirements (source builds)
 
 - **JDK 17 or newer** (the code uses Java records)
-- **FFmpeg and FFprobe** installed and available on your `PATH`
+- **FFmpeg and FFprobe** installed and available on your `PATH` (the packaged releases already include them)
   - Debian/Ubuntu: `sudo apt install ffmpeg`
   - Arch: `sudo pacman -S ffmpeg`
   - macOS: `brew install ffmpeg`
@@ -139,6 +141,7 @@ The release builds are produced with a bundled runtime: `jlink` for the AppImage
 | Shortcut | Action |
 | --- | --- |
 | `Ctrl+H` | Show / pin / close the help overlay |
+| `Ctrl+O` | Open images / MP3 with a file picker |
 | `Ctrl+N` | Add a unique color card |
 | `Ctrl+V` | Paste images or an MP3 from the clipboard |
 | `Ctrl+L` | Toggle the Cardelle logo watermark |
@@ -184,7 +187,6 @@ Temporary files are cleaned up when the render finishes.
 - [ ] Configurable resolution, fps, and per-slide duration
 - [ ] Text / caption overlays
 - [ ] Export presets for vertical and square formats
-- [ ] Bundle FFmpeg so downloads are fully standalone
 - [ ] Code signing for the Windows build
 
 ---

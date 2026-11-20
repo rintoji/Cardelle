@@ -46,7 +46,7 @@ public class Visuals {
             BlackProgressBar progressBar = new BlackProgressBar();
 
             JLabel statusLabel = new JLabel(
-                    "Cardelle • Ctrl+N color • Ctrl+V paste • Ctrl+L logo:OFF • Ctrl+E render • Ctrl+B blur • Ctrl+H help",
+                    "Cardelle • Ctrl+O open • Ctrl+N color • Ctrl+V paste • Ctrl+L logo:OFF • Ctrl+E render • Ctrl+B blur • Ctrl+H help",
                     SwingConstants.CENTER
             );
             statusLabel.setFont(new Font("Arial", Font.BOLD, 12));
@@ -426,6 +426,25 @@ public class Visuals {
                 }
             });
 
+            // Ctrl+O -> file picker fallback when drag & drop / clipboard is blocked by Windows
+            inputMap.put(KeyStroke.getKeyStroke("control O"), "openFiles");
+            actionMap.put("openFiles", new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    if (isRendering.get() || nameOverlay.isVisible()) {
+                        return;
+                    }
+                    JFileChooser chooser = new JFileChooser();
+                    chooser.setDialogTitle("Open images and an MP3");
+                    chooser.setMultiSelectionEnabled(true);
+                    chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+                    int result = chooser.showOpenDialog(frame);
+                    if (result == JFileChooser.APPROVE_OPTION) {
+                        statusLabel.setText(mediaManager.acceptFiles(List.of(chooser.getSelectedFiles())));
+                    }
+                }
+            });
+
             // Ctrl+L -> Toggle Cardelle logo watermark on/off for renders
             inputMap.put(KeyStroke.getKeyStroke("control L"), "toggleLogoMode");
             actionMap.put("toggleLogoMode", new AbstractAction() {
@@ -726,6 +745,7 @@ public class Visuals {
 
             JTextArea text = new JTextArea(
                     "Ctrl+H      Help / Pin / Close\n"
+                            + "Ctrl+O      Open image / MP3 files\n"
                             + "Ctrl+N      Unique color card\n"
                             + "Ctrl+V      Paste image / MP3\n"
                             + "Ctrl+L      Toggle Cardelle logo\n"
