@@ -1,3 +1,13 @@
+<table>
+  <tr>
+    <td align="right">
+      <a href="https://github.com/rintoji/Cardelle" aria-label="View source on GitHub">
+        <img src="docs/github-corner-white.svg" width="80" alt="View source on GitHub">
+      </a>
+    </td>
+  </tr>
+</table>
+
 <div align="center">
 
 <img src="https://raw.githubusercontent.com/rintoji/Cardelle/main/src/Cardelle_logo.png" alt="Cardelle" width="280">
@@ -189,7 +199,7 @@ Temporary files are cleaned up when the render finishes.
 │   ├── TransitionManager.java # transition catalog + logo handling
 │   ├── VideoRenderer.java     # FFmpeg pipeline and progress reporting
 │   └── Cardelle_logo.png      # the mark you see above (also embedded in builds)
-├── docs/gifs/                 # UI demos used in this README
+├── docs/                      # GitHub corner + UI demos used in this README
 ├── releases/                  # locally built artifacts (not tracked in git)
 ├── LICENSE                    # MIT
 └── README.md
