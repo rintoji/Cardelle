@@ -1,6 +1,6 @@
 <div align="right">
   <a href="https://github.com/rintoji/Cardelle" aria-label="View source on GitHub">
-    <img src="docs/github-corner-white.svg" width="80" alt="View source on GitHub">
+    <img src="docs/github-corner-cutout.svg" width="80" alt="View source on GitHub">
   </a>
 </div>
 
