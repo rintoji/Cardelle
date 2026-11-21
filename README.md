@@ -1,12 +1,8 @@
-<table>
-  <tr>
-    <td align="right">
-      <a href="https://github.com/rintoji/Cardelle" aria-label="View source on GitHub">
-        <img src="docs/github-corner-white.svg" width="80" alt="View source on GitHub">
-      </a>
-    </td>
-  </tr>
-</table>
+<div align="right">
+  <a href="https://github.com/rintoji/Cardelle" aria-label="View source on GitHub">
+    <img src="docs/github-corner-white.svg" width="80" alt="View source on GitHub">
+  </a>
+</div>
 
 <div align="center">
 
