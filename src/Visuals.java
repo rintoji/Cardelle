@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 public class Visuals {
 
@@ -34,22 +35,37 @@ public class Visuals {
 
             JLayeredPane layeredPane = new JLayeredPane();
 
-            JPanel mainPanel = new JPanel(new BorderLayout());
-            mainPanel.setBackground(Color.LIGHT_GRAY);
-
             MediaManager mediaManager = new MediaManager();
             TransitionManager transitionManager = new TransitionManager();
             VideoRenderer videoRenderer = new VideoRenderer(transitionManager);
             AtomicBoolean isRendering = new AtomicBoolean(false);
             AtomicBoolean includeLogo = new AtomicBoolean(false);
 
+            AppSettings.State settings = AppSettings.load();
+            includeLogo.set(settings.logoEnabled);
+            if (settings.logo != null) {
+                transitionManager.setCustomLogo(settings.logo);
+            }
+            Consumer<Boolean> setLogoMode = enabled -> {
+                includeLogo.set(enabled);
+                settings.logoEnabled = enabled;
+            };
+            Runnable saveSettings = () -> AppSettings.save(settings);
+
+            JPanel mainPanel = new JPanel(new BorderLayout());
+            mainPanel.setBackground(settings.main);
+
             BlackProgressBar progressBar = new BlackProgressBar();
+            progressBar.setColor(settings.accent);
 
             JLabel statusLabel = new JLabel(
-                    "Cardelle • Ctrl+O open • Ctrl+N color • Ctrl+V paste • Ctrl+L logo:OFF • Ctrl+E render • Ctrl+B blur • Ctrl+H help",
+                    "Cardelle • Ctrl+P theme • Ctrl+O open • Ctrl+N color • Ctrl+V paste • Ctrl+L logo:"
+                            + (settings.logoEnabled ? "ON" : "OFF")
+                            + " • Ctrl+E render • Ctrl+B blur • Ctrl+H help",
                     SwingConstants.CENTER
             );
             statusLabel.setFont(new Font("Arial", Font.BOLD, 12));
+            statusLabel.setForeground(settings.accent);
             statusLabel.setBorder(BorderFactory.createEmptyBorder(4, 10, 6, 10));
 
             JPanel bottomBar = new JPanel(new BorderLayout());
@@ -60,8 +76,8 @@ public class Visuals {
             DropSystem dropSystem = new DropSystem(mediaManager, statusLabel);
 
             JPanel cardContainer = new JPanel();
-            cardContainer.setLayout(new BoxLayout(cardContainer, BoxLayout.X_AXIS));
-            cardContainer.setBackground(Color.LIGHT_GRAY);
+            cardContainer.setLayout(new CenteredCardLayout());
+            cardContainer.setBackground(settings.card);
 
             JScrollPane scrollPane = new JScrollPane(cardContainer);
             scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -229,6 +245,8 @@ public class Visuals {
                 timer.start();
             };
 
+            final CustomizeOverlay[] customizeHolder = new CustomizeOverlay[1];
+
             Runnable layoutLayers = () -> {
                 int w = layeredPane.getWidth();
                 int h = layeredPane.getHeight();
@@ -243,6 +261,11 @@ public class Visuals {
                 Dimension ns = nameOverlay.getPreferredSize();
                 nameOverlay.setBounds((w - ns.width) / 2, (h - ns.height) / 2, ns.width, ns.height);
 
+                if (customizeHolder[0] != null) {
+                    Dimension zs = customizeHolder[0].getPreferredSize();
+                    customizeHolder[0].setBounds((w - zs.width) / 2, (h - zs.height) / 2, zs.width, zs.height);
+                }
+
                 mainPanel.revalidate();
                 cardContainer.revalidate();
                 scrollPane.revalidate();
@@ -255,6 +278,22 @@ public class Visuals {
                     layoutLayers.run();
                 }
             });
+
+            CustomizeOverlay customizeOverlay = new CustomizeOverlay(
+                    mainPanel::setBackground,
+                    cardContainer::setBackground,
+                    color -> {
+                        progressBar.setColor(color);
+                        statusLabel.setForeground(color);
+                    },
+                    settings,
+                    transitionManager,
+                    statusLabel,
+                    setLogoMode,
+                    saveSettings
+            );
+            customizeHolder[0] = customizeOverlay;
+            layeredPane.add(customizeOverlay, JLayeredPane.PALETTE_LAYER);
 
             Runnable rebuildDeck = () -> {
                 clearFloatingCard.run();
@@ -395,7 +434,21 @@ public class Visuals {
             actionMap.put("toggleHelp", new AbstractAction() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
+                    customizeOverlay.hideOverlay();
                     helpOverlay.onCtrlH();
+                    layoutLayers.run();
+                }
+            });
+
+            inputMap.put(KeyStroke.getKeyStroke("control P"), "toggleCustomize");
+            actionMap.put("toggleCustomize", new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    if (isRendering.get() || nameOverlay.isVisible()) {
+                        return;
+                    }
+                    helpOverlay.dismiss();
+                    customizeOverlay.onCtrlP();
                     layoutLayers.run();
                 }
             });
@@ -454,7 +507,8 @@ public class Visuals {
                         return;
                     }
                     boolean enabled = !includeLogo.get();
-                    includeLogo.set(enabled);
+                    setLogoMode.accept(enabled);
+                    saveSettings.run();
                     statusLabel.setText("Cardelle logo mode: " + (enabled ? "ON (will include logo)" : "OFF"));
                 }
             });
@@ -470,7 +524,9 @@ public class Visuals {
                     transitionManager.resetHistory();
                     progressBar.setProgress(0.0);
                     statusLabel.setText("Reset • Ctrl+N color card • Ctrl+L logo:"
-                            + (includeLogo.get() ? "ON" : "OFF") + " • Ctrl+E render");
+                            + (includeLogo.get() ? "ON" : "OFF")
+                            + (settings.logo == null ? " (default)" : " (custom)")
+                            + " • Ctrl+E render");
                 }
             });
 
@@ -499,7 +555,9 @@ public class Visuals {
             });
 
             frame.setContentPane(layeredPane);
-            frame.setSize(640, 420);
+            frame.setResizable(true);
+            frame.setMinimumSize(new Dimension(520, 380));
+            frame.setSize(900, 560);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setLocationRelativeTo(null);
 
@@ -641,8 +699,82 @@ public class Visuals {
         return count - 1;
     }
 
+    /**
+     * Horizontal card row. It centers the deck while it fits, then falls back to
+     * a left-aligned scrolling strip once the cards are wider than the viewport.
+     */
+    private static final class CenteredCardLayout implements java.awt.LayoutManager {
+
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public void addLayoutComponent(String name, Component comp) {
+        }
+
+        @Override
+        public void removeLayoutComponent(Component comp) {
+        }
+
+        @Override
+        public Dimension preferredLayoutSize(Container parent) {
+            return layoutSize(parent, false);
+        }
+
+        @Override
+        public Dimension minimumLayoutSize(Container parent) {
+            return layoutSize(parent, true);
+        }
+
+        private Dimension layoutSize(Container parent, boolean minimum) {
+            Insets insets = parent.getInsets();
+            int width = insets.left + insets.right;
+            int height = 0;
+            for (Component comp : parent.getComponents()) {
+                if (!comp.isVisible()) {
+                    continue;
+                }
+                Dimension size = minimum ? comp.getMinimumSize() : comp.getPreferredSize();
+                width += size.width;
+                height = Math.max(height, size.height);
+            }
+            return new Dimension(width, height + insets.top + insets.bottom);
+        }
+
+        @Override
+        public void layoutContainer(Container parent) {
+            Insets insets = parent.getInsets();
+            Component[] comps = parent.getComponents();
+
+            int totalWidth = 0;
+            int maxHeight = 0;
+            for (Component comp : comps) {
+                if (!comp.isVisible()) {
+                    continue;
+                }
+                Dimension size = comp.getPreferredSize();
+                totalWidth += size.width;
+                maxHeight = Math.max(maxHeight, size.height);
+            }
+
+            int availableWidth = parent.getWidth() - insets.left - insets.right;
+            int availableHeight = parent.getHeight() - insets.top - insets.bottom;
+            int x = insets.left + Math.max(0, (availableWidth - totalWidth) / 2);
+            int y = insets.top + Math.max(0, (availableHeight - maxHeight) / 2);
+
+            for (Component comp : comps) {
+                if (!comp.isVisible()) {
+                    continue;
+                }
+                Dimension size = comp.getPreferredSize();
+                comp.setBounds(x, y, size.width, size.height);
+                x += size.width;
+            }
+        }
+    }
+
     private static final class BlackProgressBar extends JComponent {
         private double progress = 0.0;
+        private Color color = Color.BLACK;
 
         BlackProgressBar() {
             setPreferredSize(new Dimension(100, 4));
@@ -655,6 +787,11 @@ public class Visuals {
             repaint();
         }
 
+        void setColor(Color value) {
+            this.color = value;
+            repaint();
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
@@ -662,7 +799,7 @@ public class Visuals {
                 return;
             }
             Graphics2D g2 = (Graphics2D) g.create();
-            g2.setColor(Color.BLACK);
+            g2.setColor(color);
             int fillW = (int) Math.round(getWidth() * progress);
             g2.fillRect(0, 0, fillW, getHeight());
             g2.dispose();
@@ -745,6 +882,7 @@ public class Visuals {
 
             JTextArea text = new JTextArea(
                     "Ctrl+H      Help / Pin / Close\n"
+                            + "Ctrl+P      Customize theme / logo\n"
                             + "Ctrl+O      Open image / MP3 files\n"
                             + "Ctrl+N      Unique color card\n"
                             + "Ctrl+V      Paste image / MP3\n"
@@ -795,6 +933,14 @@ public class Visuals {
             if (!pinned && isVisible() && fadeTimer != null) {
                 fadeTimer.start();
             }
+        }
+
+        void dismiss() {
+            holdTimer.stop();
+            fadeTimer.stop();
+            pinned = false;
+            setVisible(false);
+            repaint();
         }
 
         void onCtrlH() {

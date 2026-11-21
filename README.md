@@ -84,10 +84,11 @@ java -jar Cardelle.jar
 
 - **Drop it in** — drag image files and one MP3 onto the window, paste from the clipboard with `Ctrl+V`, or use the file picker with `Ctrl+O` if Windows blocks dragging.
 - **Color cards** — `Ctrl+N` adds a generated color card. Hues are spread with a golden-angle walk so neighbors never collapse into the same shade of pink.
-- **A deck you can touch** — left-drag to reorder with animated reflow and a subtle tilt; right-click to remove a card. Hovering gives each card a moving shine.
+- **A deck you can touch** — short decks sit centered in the window; longer ones become a scrollable strip. Left-drag to reorder with animated reflow and a subtle tilt, right-click to remove a card, and hover for a moving shine.
 - **25 transitions** — slides, wipes, pushes, reveals, blurs, pixelize, shutters, and more. FFmpeg `xfade` transitions are picked randomly without repeating the last one.
 - **Music-synced output** — the MP3 duration is measured first, then slide lengths are calculated so the video lands with the track. Renders at **1280×720, 60 fps**.
-- **Optional logo watermark** — `Ctrl+L` toggles the Cardelle logo, embedded in every build, in the center of the final video.
+- **Make it yours** — `Ctrl+P` opens an in-app panel (the same translucent style as help) to recolor the main panel, card panel, and accent, or swap the logo for your own image. There’s a reset for each color, the logo, or everything at once.
+- **Optional logo watermark** — `Ctrl+L` toggles the Cardelle logo, embedded in every build, in the center of the final video. Your custom logo and colors are saved and survive deck resets and restarts.
 - **Full blur mode** — `Ctrl+B` renders with a soft blur over the whole track, for use as a background layer.
 - **No guesswork** — live progress bar, a small self-hiding help overlay (`Ctrl+H`), and the finished video opens automatically when rendering completes.
 
@@ -114,7 +115,7 @@ java -cp out Visuals
 To rebuild the portable jar yourself:
 
 ```bash
-javac --release 21 -d build/classes src/*.java
+javac --release 17 -d build/classes src/*.java
 cp src/Cardelle_logo.png build/classes/
 jar --create --file Cardelle.jar \
     --manifest src/META-INF/MANIFEST.MF \
@@ -132,15 +133,17 @@ The release builds are produced with a bundled runtime: `jlink` for the AppImage
 3. Drop a single `.mp3` onto the window — this becomes the soundtrack.
 4. Add color cards with `Ctrl+N` if you want breathing room between images.
 5. Reorder by dragging, delete with right-click.
-6. Toggle the logo watermark with `Ctrl+L` (off by default).
-7. Press `Ctrl+E` for a normal render, or `Ctrl+B` for the blurred version.
-8. Name the video, then let it cook. The result is saved to `~/Videos` when that folder exists, otherwise next to your MP3, and opens automatically.
+6. Press `Ctrl+P` to customize colors or use your own logo, then close it with `Ctrl+P` again.
+7. Toggle the logo watermark with `Ctrl+L` (off by default, unless you just picked a custom logo).
+8. Press `Ctrl+E` for a normal render, or `Ctrl+B` for the blurred version.
+9. Name the video, then let it cook. The result is saved to `~/Videos` when that folder exists, otherwise next to your MP3, and opens automatically.
 
 ## Controls
 
 | Shortcut | Action |
 | --- | --- |
 | `Ctrl+H` | Show / pin / close the help overlay |
+| `Ctrl+P` | Open / close the in-app customization panel |
 | `Ctrl+O` | Open images / MP3 with a file picker |
 | `Ctrl+N` | Add a unique color card |
 | `Ctrl+V` | Paste images or an MP3 from the clipboard |
@@ -171,6 +174,8 @@ Temporary files are cleaned up when the render finishes.
 ├── src/
 │   ├── Visuals.java           # UI, window, shortcuts, render triggers
 │   ├── Cards.java             # tilting, shine-y card component
+│   ├── CustomizeOverlay.java  # in-app theme / logo panel
+│   ├── AppSettings.java       # persisted color + logo preferences
 │   ├── MediaManager.java      # slide list, color generation, MP3 state
 │   ├── DropSystem.java        # drag & drop file handling
 │   ├── TransitionManager.java # transition catalog + logo handling

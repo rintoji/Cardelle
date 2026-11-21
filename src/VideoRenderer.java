@@ -350,6 +350,10 @@ public class VideoRenderer {
 
         boolean hasLogo = (logoFile != null && logoFile.exists());
         if (hasLogo) {
+            // A PNG is a single frame by default. Loop it so the watermark is
+            // present for the entire video, not just the first frame.
+            cmd.add("-loop");
+            cmd.add("1");
             cmd.add("-i");
             cmd.add(logoFile.getAbsolutePath());
         }

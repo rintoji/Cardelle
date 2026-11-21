@@ -72,10 +72,19 @@ public class TransitionManager {
 
     private final Random random = new Random();
     private EditorTransition lastTransition = null;
+    private File customLogoFile;
     private int width = 1280;
     private int height = 720;
     private int fps = 60;
     private double transitionDuration = 0.45;
+
+    public void setCustomLogo(File file) {
+        this.customLogoFile = (file != null && file.isFile()) ? file : null;
+    }
+
+    public File getCustomLogo() {
+        return customLogoFile;
+    }
 
     public void resetHistory() {
         lastTransition = null;
@@ -157,6 +166,14 @@ public class TransitionManager {
 
     public File writeCardelleLogoPng(Path workDir) throws IOException {
         File out = workDir.resolve("Cardelle_logo.png").toFile();
+
+        if (customLogoFile != null && customLogoFile.isFile()) {
+            BufferedImage custom = ImageIO.read(customLogoFile);
+            if (custom != null) {
+                ImageIO.write(custom, "PNG", out);
+                return out;
+            }
+        }
 
         try (var in = TransitionManager.class.getResourceAsStream("/Cardelle_logo.png")) {
             if (in != null) {

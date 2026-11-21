@@ -3,6 +3,7 @@
 
 ### Local release artifacts (uploaded to GitHub Releases instead) ###
 releases/
+build/
 
 ### IntelliJ IDEA ###
 out/
