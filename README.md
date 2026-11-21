@@ -27,6 +27,14 @@ The whole editor lives in one modest window: a scrollable row of tilting cards y
 
 > **Status:** alpha. It works, it renders, and it is still being shaped.
 
+## In motion
+
+The deck is meant to feel touchable: cards tilt toward the pointer with a soft warped shine, and dragging one makes the rest slide smoothly into their new places.
+
+| Tilt / 3D effect | Reordering |
+| --- | --- |
+| <img src="docs/gifs/tilt-effect.gif" width="400" alt="Cardelle card tilt effect"> | <img src="docs/gifs/reorder.gif" width="400" alt="Cardelle card reordering"> |
+
 ## Why "Cardelle"?
 
 The name is the whole idea, compressed into one word.
@@ -181,6 +189,7 @@ Temporary files are cleaned up when the render finishes.
 │   ├── TransitionManager.java # transition catalog + logo handling
 │   ├── VideoRenderer.java     # FFmpeg pipeline and progress reporting
 │   └── Cardelle_logo.png      # the mark you see above (also embedded in builds)
+├── docs/gifs/                 # UI demos used in this README
 ├── releases/                  # locally built artifacts (not tracked in git)
 ├── LICENSE                    # MIT
 └── README.md
