@@ -51,13 +51,13 @@ That little transformation is the reason for every feature below: the cards are 
 
 ## Downloads
 
-Grab the latest build from the [releases page](https://github.com/rintoji/Cardelle/releases/latest), or jump straight to the current alpha (`v0.1.1-alpha`):
+Grab the latest build from the [releases page](https://github.com/rintoji/Cardelle/releases/latest), or jump straight to the current alpha (`v0.1.2-alpha`):
 
 | Platform | File | What you need |
 | --- | --- | --- |
-| Linux | [Cardelle-x86_64.AppImage](https://github.com/rintoji/Cardelle/releases/download/v0.1.1-alpha/Cardelle-x86_64.AppImage) | Nothing — Java **and FFmpeg** are bundled. On older distros you may need `fuse2` for AppImages. |
-| Windows | [Cardelle.exe](https://github.com/rintoji/Cardelle/releases/download/v0.1.1-alpha/Cardelle.exe) | Nothing — a Windows JRE **and FFmpeg** are bundled and unpack on first launch. |
-| Anywhere | [Cardelle.jar](https://github.com/rintoji/Cardelle/releases/download/v0.1.1-alpha/Cardelle.jar) | Java 17+ **and FFmpeg/FFprobe** on your `PATH`. The logo is baked into the jar. |
+| Linux | [Cardelle-x86_64.AppImage](https://github.com/rintoji/Cardelle/releases/download/v0.1.2-alpha/Cardelle-x86_64.AppImage) | Nothing — Java **and FFmpeg** are bundled. On older distros you may need `fuse2` for AppImages. |
+| Windows | [Cardelle.exe](https://github.com/rintoji/Cardelle/releases/download/v0.1.2-alpha/Cardelle.exe) | Nothing — a Windows JRE **and FFmpeg** are bundled and unpack on first launch. |
+| Anywhere | [Cardelle.jar](https://github.com/rintoji/Cardelle/releases/download/v0.1.2-alpha/Cardelle.jar) | Java 17+ **and FFmpeg/FFprobe** on your `PATH`. The logo is baked into the jar. |
 
 **Linux**
 
